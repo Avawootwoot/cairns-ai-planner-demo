@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Cairns AI Trip Planner</title>
+
+    <link rel="stylesheet" href="/static/styles.css">
+
+</head>
+
+<body>
+
+
+
+<h1>Cairns AI Trip Planner</h1>
+
+
+
+<form method="post" action="/plan">
+
+
+
+<h3>Select Dates</h3>
+
+Start: <input type="date" name="start_date" required>
+
+End: <input type="date" name="end_date" required>
+
+
+
+<h3>Travellers</h3>
+
+Adults: <input type="number" name="adults" value="2">
+
+Children: <input type="number" name="children" value="0">
+
+Infants: <input type="number" name="infants" value="0">
+
+Pensioners: <input type="number" name="pensioners" value="0">
+
+
+
+<h3>Can Swim?</h3>
+
+<label><input type="radio" name="can_swim" value="yes" checked> Yes</label>
+
+<label><input type="radio" name="can_swim" value="no"> No</label>
+
+
+
+<h3>Select Must-Do's</h3>
+
+{% for md in must_dos %}
+
+<label>
+
+<input type="checkbox" name="selected_must_dos" value="{{ md }}">
+
+{{ md }}
+
+</label><br>
+
+{% endfor %}
+
+
+
+<h2>Select Sub-Categories</h2>
+
+{% for category, items in category_structure.items() %}
+  <h3 style="margin-top:20px;">{{ category }}</h3>
+  
+  {% for item in items %}
+    <div>
+      <label>
+        <input type="checkbox" name="selected_subcats" value="{{ item }}">
+        {{ item }}
+      </label>
+    </div>
+  {% endfor %}
+{% endfor %}
+
+
+
+<br>
+
+<button type="submit">Generate Itinerary</button>
+
+</form>
+
+
+
+{% if itinerary %}
+
+<hr>
+
+<h2>Your Itinerary</h2>
+
+{% for day in itinerary %}
+
+<div class="day-card">
+
+<h3>{{ day.date }}</h3>
+
+
+
+{% if day.anchor_group %}
+
+<strong>{{ day.anchor_group.title }}</strong><br>
+
+Duration: {{ day.anchor_group.duration_hours }} hours<br>
+
+
+
+<h4>Available Variants:</h4>
+
+<ul>
+
+{% for v in day.variants %}
+
+<li>{{ v.title }}</li>
+
+{% endfor %}
+
+</ul>
+
+
+
+<h4>Suggested Free Attractions:</h4>
+
+<ul>
+
+{% for f in day.fillers %}
+
+<li>{{ f.title }}</li>
+
+{% endfor %}
+
+</ul>
+
+
+
+{% if day.filler_note %}
+
+<p><em>{{ day.filler_note }}</em></p>
+
+{% endif %}
+
+
+
+{% else %}
+
+<p>No activity assigned.</p>
+
+{% endif %}
+
+
+
+</div>
+
+{% endfor %}
+
+{% endif %}
+
+
+
+</body>
+
+</html>
