@@ -83,7 +83,10 @@ def home(request: Request):
         "request": request,
         "must_dos": must_dos,
         "category_structure": CATEGORY_STRUCTURE,
-        "itinerary": None
+        "itinerary": None,
+        "selected_must_dos": [],
+        "selected_subcats": [],
+
     })
 
 
@@ -136,5 +139,7 @@ def plan(
         "request": request,
         "must_dos": must_dos,
         "category_structure": CATEGORY_STRUCTURE,
-        "itinerary": itin
+        "itinerary": itin,
+        "selected_must_dos": selected_must_dos,
+        "selected_subcats": selected_subcats,
     })

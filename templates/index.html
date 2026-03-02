@@ -53,31 +53,24 @@ Pensioners: <input type="number" name="pensioners" value="0">
 <h3>Select Must-Do's</h3>
 
 {% for md in must_dos %}
-
-<label>
-
-<input type="checkbox" name="selected_must_dos" value="{{ md }}">
-
-{{ md }}
-
-</label><br>
-
+  <label>
+    <input type="checkbox" name="selected_must_dos" value="{{ md }}"
+      {% if md in selected_must_dos %}checked{% endif %}>
+    {{ md }}
+  </label><br>
 {% endfor %}
-
 
 
 <h2>Select Sub-Categories</h2>
 
 {% for category, items in category_structure.items() %}
-  <h3 style="margin-top:20px;">{{ category }}</h3>
-  
+  <h3>{{ category }}</h3>
   {% for item in items %}
-    <div>
-      <label>
-        <input type="checkbox" name="selected_subcats" value="{{ item }}">
-        {{ item }}
-      </label>
-    </div>
+    <label>
+      <input type="checkbox" name="selected_subcats" value="{{ item }}"
+        {% if item in selected_subcats %}checked{% endif %}>
+      {{ item }}
+    </label><br>
   {% endfor %}
 {% endfor %}
 
