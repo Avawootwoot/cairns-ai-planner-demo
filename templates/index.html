@@ -1,163 +1,356 @@
 <!DOCTYPE html>
 
 <html>
-
 <head>
-
     <title>Cairns AI Trip Planner</title>
-
-    <link rel="stylesheet" href="/static/styles.css">
-
+    <link rel="stylesheet" href="/static/styles.css?v=2">
 </head>
 
 <body>
 
-
-
 <h1>Cairns AI Trip Planner</h1>
-
-
 
 <form method="post" action="/plan">
 
+  <h3>Select Dates</h3>
+  Start: <input type="date" name="start_date" required>
+  End: <input type="date" name="end_date" required>
 
+  <h3>Travellers</h3>
+  Adults: <input type="number" name="adults" value="2">
+  Children: <input type="number" name="children" value="0">
+  Infants: <input type="number" name="infants" value="0">
+  Pensioners: <input type="number" name="pensioners" value="0">
 
-<h3>Select Dates</h3>
+  <h3>Can Swim?</h3>
+  <label><input type="radio" name="can_swim" value="yes" checked> Yes</label>
+  <label><input type="radio" name="can_swim" value="no"> No</label>
 
-Start: <input type="date" name="start_date" required>
-
-End: <input type="date" name="end_date" required>
-
-
-
-<h3>Travellers</h3>
-
-Adults: <input type="number" name="adults" value="2">
-
-Children: <input type="number" name="children" value="0">
-
-Infants: <input type="number" name="infants" value="0">
-
-Pensioners: <input type="number" name="pensioners" value="0">
-
-
-
-<h3>Can Swim?</h3>
-
-<label><input type="radio" name="can_swim" value="yes" checked> Yes</label>
-
-<label><input type="radio" name="can_swim" value="no"> No</label>
-
-
-
-<h3>Select Must-Do's</h3>
-
-{% for md in must_dos %}
-  <label>
-    <input type="checkbox" name="selected_must_dos" value="{{ md }}"
-      {% if md in selected_must_dos %}checked{% endif %}>
-    {{ md }}
-  </label><br>
-{% endfor %}
-
-
-<h2>Select Sub-Categories</h2>
-
-{% for category, items in category_structure.items() %}
-  <h3>{{ category }}</h3>
-  {% for item in items %}
+  <h3>Select Must-Do's</h3>
+  {% for md in must_dos %}
     <label>
-      <input type="checkbox" name="selected_subcats" value="{{ item }}"
-        {% if item in selected_subcats %}checked{% endif %}>
-      {{ item }}
+      <input type="checkbox" name="selected_must_dos" value="{{ md }}"
+        {% if md in selected_must_dos %}checked{% endif %}>
+      {{ md }}
     </label><br>
   {% endfor %}
-{% endfor %}
 
+  <h2>Select Sub-Categories</h2>
+  {% for category, items in category_structure.items() %}
+    <h3>{{ category }}</h3>
+    {% for item in items %}
+      <label>
+        <input type="checkbox" name="selected_subcats" value="{{ item }}"
+          {% if item in selected_subcats %}checked{% endif %}>
+        {{ item }}
+      </label><br>
+    {% endfor %}
+  {% endfor %}
 
+  <br>
+  <button type="submit" name="action" value="plan">Generate Itinerary</button>
 
-<br>
+  {% if itinerary %}
 
-<button type="submit">Generate Itinerary</button>
+    <hr>
+    <h2>Your Itinerary</h2>
+
+    {% for day in itinerary %}
+    <div class="day-card">
+
+      <h3>{{ day.date }}</h3>
+
+      {% if day.anchor_group %}
+        <strong>{{ day.anchor_group.title }}</strong><br>
+
+        <h4>Available Options:</h4>
+
+        <div class="variants-wrapper">
+          <div class="variants-scroll">
+            {% for v in day.variants %}
+              <div class="variant-card">
+
+                {% if v.image_url %}
+                  <img src="{{ v.image_url }}" alt="{{ v.title }}" class="variant-image">
+                {% endif %}
+
+                <div class="variant-title">{{ v.title }}</div>
+                {% if v.duration_hours %}
+                  <div class="variant-duration">
+                    ⏱ {{ v.duration_hours }} hours
+                  </div>
+                {% endif %}
+
+                <!-- pricing block (treats NaN/blank child price as "per person") -->
+                {% if v.adult_price %}
+                  {% set cp = v.child_price %}
+                  {% if cp is not none %}
+                    {% set cp = cp|string %}
+                  {% endif %}
+
+                  <div class="price-box">
+
+                    {% if cp and cp|lower != 'nan' %}
+                      <div class="price-row">
+                        <span class="price-label">Adult</span>
+                        <span class="price-value">{{ v.adult_price }}</span>
+                      </div>
+
+                      <div class="price-row">
+                        <span class="price-label">Child</span>
+                        <span class="price-value">{{ v.child_price }}</span>
+                      </div>
+                    {% else %}
+                      <div class="price-from">FROM</div>
+                      <div class="price-main">{{ v.adult_price }}</div>
+                      <div class="price-sub">per person</div>
+                    {% endif %}
+
+                  </div>
+                {% endif %}
+
+                <div class="variant-actions">
+
+                  <details class="variant-details">
+                    <summary class="btn-secondary" role="button" aria-label="More details">
+                      More details
+                    </summary>
+
+                    <div class="variant-details-body">
+                      <div><strong>Product ID:</strong> {{ v.product_id }}</div>
+                      <div><strong>Hot score:</strong> {{ v.hot_seller_score }}</div>
+
+                      {% if v.adult_price %}
+                        <div><strong>Adult price:</strong> {{ v.adult_price }}</div>
+                      {% endif %}
+
+                      {# ✅ UPDATED: only show child price if it's not NaN #}
+                      {% set cp2 = v.child_price %}
+                      {% if cp2 is not none %}
+                        {% set cp2 = cp2|string %}
+                      {% endif %}
+                      {% if cp2 and cp2|lower != 'nan' %}
+                        <div><strong>Child price:</strong> {{ v.child_price }}</div>
+                      {% endif %}
+                    </div>
+                  </details>
+
+                  <div class="add-cart-wrap">
+                    <button type="submit"
+                            name="add_to_cart"
+                            value="{{ v.product_id }}"
+                            class="btn-primary variant-add">
+                      🛒 Add to cart
+                    </button>
+
+                    <span class="tooltip" aria-label="Info">
+                      ⓘ
+                      <span class="tooltip-text">
+                        You can change the date at the final booking page.
+                      </span>
+                    </span>
+                  </div>
+
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Free-time attractions accordion (collapsed by default) -->
+        <details class="accordion">
+          <summary class="accordion-header">
+            Explore these spots at your leisure!
+            <span class="accordion-count">{{ day.fillers|length }}</span>
+          </summary>
+
+          <div class="accordion-body">
+            {% if day.fillers %}
+              <ul class="free-list">
+                {% for f in day.fillers %}
+                  <li>{{ f.title }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="free-empty">No free-time attractions suggested for this day.</p>
+            {% endif %}
+          </div>
+        </details>
+
+        {% if day.filler_note %}
+          <p><em>{{ day.filler_note }}</em></p>
+        {% endif %}
+
+      {% else %}
+        <p>No activity assigned.</p>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+
+  {% endif %}
 
 </form>
 
-
-
 {% if itinerary %}
+  <!-- Floating Chat Widget -->
+  <div class="chat-fab" id="chatFab" aria-label="Open chat" title="Edit trip with chat">🗪</div>
 
-<hr>
+  <div class="chat-panel" id="chatPanel" aria-hidden="true">
+    <div class="chat-header">
+      <div class="chat-title">Trip Editor</div>
+      <button type="button" class="chat-close" id="chatClose" aria-label="Close chat">✕</button>
+    </div>
 
-<h2>Your Itinerary</h2>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-msg bot">
+        <div class="bubble">
+          Hi! Tell me what you’d like to change.<br>
+          <span class="hint">Examples: “On day 2 replace with Kuranda”, “Add a day for beach”, “Remove day 3”</span>
+        </div>
+      </div>
 
-{% for day in itinerary %}
+      {% if last_chat_message %}
+        <div class="chat-msg user">
+          <div class="bubble">{{ last_chat_message }}</div>
+        </div>
+      {% endif %}
 
-<div class="day-card">
+      {% if last_chat_reply %}
+        <div class="chat-msg bot">
+          <div class="bubble">{{ last_chat_reply }}</div>
+        </div>
+      {% endif %}
+    </div>
 
-<h3>{{ day.date }}</h3>
+    <form class="chat-input" id="chatForm">
+      <input type="hidden" name="itinerary_json" id="itineraryJson" value='{{ itinerary_json | safe }}'>
 
+      <!-- Round-trip inputs so backend can preserve state if needed -->
+      <input type="hidden" name="start_date" value="{{ start_date }}">
+      <input type="hidden" name="end_date" value="{{ end_date }}">
+      <input type="hidden" name="adults" value="{{ adults }}">
+      <input type="hidden" name="children" value="{{ children }}">
+      <input type="hidden" name="infants" value="{{ infants }}">
+      <input type="hidden" name="pensioners" value="{{ pensioners }}">
+      <input type="hidden" name="can_swim" value="{{ can_swim }}">
 
+      {% for md in selected_must_dos %}
+        <input type="hidden" name="selected_must_dos" value="{{ md }}">
+      {% endfor %}
+      {% for sc in selected_subcats %}
+        <input type="hidden" name="selected_subcats" value="{{ sc }}">
+      {% endfor %}
 
-{% if day.anchor_group %}
+      <textarea name="chat_message" id="chatMessage" rows="2" placeholder="Type a change…" required></textarea>
+      <button type="submit" id="chatSend">Send</button>
+    </form>
+  </div>
 
-<strong>{{ day.anchor_group.title }}</strong><br>
+  <script>
+    (function () {
+      const fab = document.getElementById("chatFab");
+      const panel = document.getElementById("chatPanel");
+      const closeBtn = document.getElementById("chatClose");
+      const form = document.getElementById("chatForm");
+      const body = document.getElementById("chatBody");
+      const msg = document.getElementById("chatMessage");
+      const sendBtn = document.getElementById("chatSend");
 
-Duration: {{ day.anchor_group.duration_hours }} hours<br>
+      function openChat() {
+        panel.classList.add("open");
+        panel.setAttribute("aria-hidden", "false");
+        setTimeout(() => msg.focus(), 50);
+        scrollToBottom();
+      }
 
+      function closeChat() {
+        panel.classList.remove("open");
+        panel.setAttribute("aria-hidden", "true");
+      }
 
+      function scrollToBottom() {
+        body.scrollTop = body.scrollHeight;
+      }
 
-<h4>Available Variants:</h4>
+      function addMessage(role, text) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "chat-msg " + role;
 
-<ul>
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
 
-{% for v in day.variants %}
+        wrapper.appendChild(bubble);
+        body.appendChild(wrapper);
+        scrollToBottom();
+      }
 
-<li>{{ v.title }}</li>
+      function addTyping() {
+        const wrapper = document.createElement("div");
+        wrapper.className = "chat-msg bot";
+        wrapper.id = "typingIndicator";
 
-{% endfor %}
+        const bubble = document.createElement("div");
+        bubble.className = "bubble typing";
+        bubble.innerHTML = '<span></span><span></span><span></span>';
 
-</ul>
+        wrapper.appendChild(bubble);
+        body.appendChild(wrapper);
+        scrollToBottom();
+      }
 
+      function removeTyping() {
+        const t = document.getElementById("typingIndicator");
+        if (t) t.remove();
+      }
 
+      fab.addEventListener("click", openChat);
+      closeBtn.addEventListener("click", closeChat);
 
-<h4>Suggested Free Attractions:</h4>
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-<ul>
+        const text = msg.value.trim();
+        if (!text) return;
 
-{% for f in day.fillers %}
+        addMessage("user", text);
+        msg.value = "";
 
-<li>{{ f.title }}</li>
+        addTyping();
+        sendBtn.disabled = true;
 
-{% endfor %}
+        try {
+          const formData = new FormData(form);
+          const res = await fetch("/chat_edit?format=json", {
+            method: "POST",
+            body: formData
+          });
 
-</ul>
+          if (!res.ok) throw new Error("Request failed");
+          const data = await res.json();
 
+          removeTyping();
+          addMessage("bot", data.reply || "Done.");
 
+          // Update itinerary JSON for next edit
+          if (data.itinerary_json) {
+            document.getElementById("itineraryJson").value = data.itinerary_json;
+          }
 
-{% if day.filler_note %}
+          // If you want the main itinerary UI to update immediately, uncomment:
+          // window.location.reload();
 
-<p><em>{{ day.filler_note }}</em></p>
-
+        } catch (err) {
+          removeTyping();
+          addMessage("bot", "Sorry—something went wrong applying that change.");
+        } finally {
+          sendBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
 {% endif %}
-
-
-
-{% else %}
-
-<p>No activity assigned.</p>
-
-{% endif %}
-
-
-
-</div>
-
-{% endfor %}
-
-{% endif %}
-
-
 
 </body>
-
 </html>

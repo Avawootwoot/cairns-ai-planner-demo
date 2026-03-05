@@ -1,21 +1,486 @@
 body {
-
     font-family: Arial, sans-serif;
-
     margin: 40px;
-
 }
 
-
-
+/* Day card styling */
 .day-card {
-
     border: 1px solid #ddd;
-
     padding: 15px;
-
     margin-bottom: 20px;
-
     border-radius: 8px;
+    background: #ffffff;
+}
 
+/* ============================= */
+/* Horizontal Variant Scroller   */
+/* ============================= */
+
+.variants-wrapper {
+    margin: 12px 0 20px 0;
+}
+
+.variants-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+}
+
+.variants-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.variants-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.variants-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ============================= */
+/* Variant Card Styling          */
+/* ============================= */
+
+.variant-card {
+    flex: 0 0 260px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fafafa;
+    scroll-snap-align: start;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+}
+
+.variant-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* image at top of variant card */
+.variant-image {
+    width: 100%;
+    height: 130px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #e9e9e9;
+}
+
+.variant-title {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+
+.variant-meta {
+    font-size: 12px;
+    color: #555;
+    margin-top: 4px;
+}
+
+/* ============================= */
+/* ✅ NEW: Price box styling     */
+/* ============================= */
+
+.price-box {
+    margin: 6px 0 10px 0;
+}
+
+/* Adult / Child rows */
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin: 2px 0;
+}
+
+.price-label {
+    color: #666;
+}
+
+.price-value {
+    font-weight: 700;
+    color: #111;
+}
+
+/* Per person pricing */
+.price-from {
+    font-size: 10px;
+    color: #777;
+    letter-spacing: 1px;
+}
+
+.price-main {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f6feb;
+    line-height: 1.1;
+}
+
+.price-sub {
+    font-size: 11px;
+    color: #777;
+}
+
+/* ============================= */
+/* Variant Action Buttons        */
+/* ============================= */
+
+.variant-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.variant-actions button,
+.variant-actions summary {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    background: #fff;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Allow Add button to grow wider */
+.variant-add {
+    min-width: 120px;
+}
+
+/* Ensure summary behaves well inside flex */
+.variant-actions summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Remove default details arrow */
+.variant-details summary {
+    list-style: none;
+}
+
+.variant-details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* More details button */
+.btn-secondary {
+    background: #ffffff;
+    color: #111;
+}
+
+/* ✅ Fix: Add to cart button text should be white */
+.btn-primary {
+    background: #1f6feb;
+    border: 1px solid #1f6feb;
+    color: #090909;
+    font-weight: 400;
+}
+
+.btn-primary:hover {
+    filter: brightness(0.95);
+}
+
+.variant-details-body {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #555;
+}
+
+/* ============================= */
+/* Add-to-cart + Tooltip Layout  */
+/* ============================= */
+
+.add-cart-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltip {
+    position: relative;
+    font-size: 13px;
+    color: #777;
+    cursor: pointer;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    padding: 6px 8px;
+    border-radius: 6px;
+
+    position: absolute;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+
+    font-size: 11px;
+    line-height: 1.3;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* ============================= */
+/* Free-time attractions Accordion */
+/* ============================= */
+
+.accordion {
+    margin-top: 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.accordion-header {
+    cursor: pointer;
+    padding: 12px 14px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+}
+
+.accordion-header::-webkit-details-marker {
+    display: none;
+}
+
+.accordion-header::after {
+    content: "▾";
+    color: #666;
+    margin-left: 10px;
+}
+
+.accordion[open] .accordion-header::after {
+    content: "▴";
+}
+
+.accordion-count {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    color: #444;
+    margin-left: 10px;
+}
+
+.accordion-body {
+    padding: 0 14px 12px 26px;
+}
+
+.free-list {
+    margin: 8px 0 0 0;
+}
+
+.free-list li {
+    margin: 4px 0;
+}
+
+.free-empty {
+    margin: 8px 0 0 0;
+    color: #666;
+    font-size: 13px;
+}
+
+/* ============================= */
+/* Floating Chat Widget          */
+/* ============================= */
+
+.chat-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #1f6feb;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 2000;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+
+.chat-panel {
+    position: fixed;
+    right: 18px;
+    bottom: 82px;
+    width: 320px;
+    max-width: calc(100vw - 36px);
+    height: 420px;
+    max-height: calc(100vh - 120px);
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    overflow: hidden;
+    display: none;
+    z-index: 2000;
+}
+
+.chat-panel.open {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fafafa;
+}
+
+.chat-title {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.chat-close {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 6px 8px;
+    border-radius: 8px;
+}
+
+.chat-close:hover {
+    background: #f0f0f0;
+}
+
+.chat-body {
+    padding: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.chat-msg {
+    display: flex;
+    margin: 8px 0;
+}
+
+.chat-msg.user {
+    justify-content: flex-end;
+}
+
+.chat-msg.bot {
+    justify-content: flex-start;
+}
+
+.bubble {
+    max-width: 82%;
+    padding: 10px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.35;
+    border: 1px solid #e6e6e6;
+    background: #fff;
+    white-space: pre-wrap;
+}
+
+.chat-msg.user .bubble {
+    background: #1f6feb;
+    color: #fff;
+    border-color: #1f6feb;
+}
+
+.chat-msg.bot .bubble {
+    background: #f7f7f7;
+}
+
+.bubble .hint {
+    color: #777;
+    font-size: 12px;
+}
+
+.chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    background: #fff;
+}
+
+.chat-input textarea {
+    flex: 1;
+    resize: none;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+.chat-input button {
+    width: 72px;
+    border-radius: 10px;
+    border: none;
+    background: #1f6feb;
+    color: #fff;
+    cursor: pointer;
+}
+
+.chat-input button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* typing dots */
+.bubble.typing {
+    width: 52px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+.bubble.typing span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #888;
+    display: inline-block;
+    animation: chat-bounce 1s infinite ease-in-out;
+}
+
+.bubble.typing span:nth-child(2) { animation-delay: 0.15s; }
+.bubble.typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes chat-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+    40% { transform: translateY(-4px); opacity: 1; }
 }

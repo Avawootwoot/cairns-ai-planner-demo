@@ -37,6 +37,7 @@ def _truthy(x) -> bool:
     if isinstance(x, (int, float)): return x != 0
     s = str(x).strip().lower()
     return s in ("true", "yes", "y", "1", "t")
+
 def _selected_half_day(ctx: Context) -> bool:
     return any(str(x).strip().lower() == "half day tours" for x in ctx.selected_subcats)
 
@@ -71,11 +72,33 @@ def filter_variants(variants: pd.DataFrame, ctx: Context) -> pd.DataFrame:
     if ctx.can_swim is False and COLS["non_swimmer"] in v.columns:
         v = v[v[COLS["non_swimmer"]].apply(_truthy)]
 
+    # DEBUG HERE (after traveller filters)
+    scuba_rows = v[
+        v[COLS["group_id"]].astype(str).str.strip() == "AG_Scuba_Diving_01"
+    ]
+
+    print("----- DEBUG SCUBA -----")
+    print("can_swim:", ctx.can_swim)
+    print("infants:", ctx.infants,
+          "children:", ctx.children,
+          "pensioners:", ctx.pensioners)
+    print("Scuba rows remaining after traveller filters:", len(scuba_rows))
+    print(scuba_rows[[
+        COLS["variant_id"],
+        COLS["variant_title"],
+        COLS["non_swimmer"],
+        COLS["kid"],
+        COLS["infant"],
+        COLS["pensioner"],
+    ]])
+    print("-----------------------")
+
+    must_do_sel = set([str(x).strip() for x in ctx.selected_must_dos if str(x).strip()])
+
     must_do_sel = set([str(x).strip() for x in ctx.selected_must_dos if str(x).strip()])
     subcat_sel = set(str(x).strip().lower() for x in ctx.selected_subcats if str(x).strip())
     ALIASES = {
-        "rafting": "whitewater rafting",
-        "cave tours": "cave tours",   
+        "rafting": "whitewater rafting", 
         "market visit": "market visit",
         "museum visit": "museum visit",
         "hot air balloon": "hot air balloon flights",  
@@ -87,6 +110,11 @@ def filter_variants(variants: pd.DataFrame, ctx: Context) -> pd.DataFrame:
         if s in ALIASES:
             expanded.add(ALIASES[s])
     subcat_sel = expanded
+    print("subcat_sel:", subcat_sel)
+    scuba_group = v[v[COLS["group_id"]].astype(str).str.strip() == "AG_Scuba_Diving_01"]
+    print("Scuba subcats in data:")
+    print(scuba_group[[COLS["primary"], COLS["secondary"], COLS["tertiary"]]])
+    
 
     def matches(row) -> bool:
         md = str(row.get(COLS["must_do"], "")).strip()
@@ -103,6 +131,8 @@ def filter_variants(variants: pd.DataFrame, ctx: Context) -> pd.DataFrame:
  
     # Keep only rows matching user selections
     v = v[v.apply(matches, axis=1)]
+    print("Rows after subcategory matching:", len(v))
+    print("Unique group_ids after matching:", v[COLS["group_id"]].unique())
 
     # Hard filter: Half Day vs Full Day preference
     half_selected = any(str(x).strip().lower() == "half day tours" for x in ctx.selected_subcats)
@@ -145,13 +175,14 @@ def _score_group(row: pd.Series, ctx: Context) -> Tuple[float, Dict[str, Any]]:
         why["tags"].append("must_do_match")
 
     subcats = [
-        str(row.get(COLS["primary"], "")).strip(),
-        str(row.get(COLS["secondary"], "")).strip(),
-        str(row.get(COLS["tertiary"], "")).strip(),
+        str(row.get(COLS["primary"], "")).strip().lower(),
+        str(row.get(COLS["secondary"], "")).strip().lower(),
+        str(row.get(COLS["tertiary"], "")).strip().lower(),
     ]
+    
     match_count = sum(1 for s in subcats if s and s in subcat_sel)
     if match_count:
-        score += 12 * match_count
+        score += 40 * match_count
         why["tags"].append(f"subcat_matches:{match_count}")
 
     # Soft boosts for traveller fit
@@ -329,6 +360,10 @@ def attach_variants(itinerary: List[Dict[str, Any]], filtered_variants: pd.DataF
             {
                 "product_id": r.get(COLS["variant_id"]),
                 "title": r.get(COLS["variant_title"]),
+                "adult_price": r.get("adult_price"),
+                "child_price": r.get("child_price"),
+                "image_url": r.get("image_url"),
+                "duration_hours": r.get("duration in hours"),
                 "hot_seller_score": float(r.get(COLS["variant_hot"], 0)),
             }
             for _, r in vv.head(top_n).iterrows()

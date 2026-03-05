@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Cart</title>
+  <link rel="stylesheet" href="/static/styles.css?v=2">
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; }
+
+    .cart-top {
+      display:flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .cart-note {
+      color:#555;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .cart-grid {
+      display:flex;
+      gap:14px;
+      overflow-x:auto;
+      padding-bottom:10px;
+      margin-top: 16px;
+    }
+
+    .day-col {
+      min-width: 300px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .day-col h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .dropzone {
+      min-height: 140px;
+      display:flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .empty-slot {
+      color:#777;
+      font-size: 13px;
+      border:1px dashed #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fafafa;
+    }
+
+    .cart-card {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafafa;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .cart-card:active { cursor: grabbing; }
+
+    .cart-card img {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      background: #eee;
+    }
+
+    .cart-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .cart-meta {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    .cart-price {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .price-row {
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .price-label { color:#666; font-weight: 600; }
+    .price-value { color:#111; font-weight: 700; }
+
+    .drag-over {
+      outline: 2px dashed #1f6feb;
+      outline-offset: 4px;
+      border-radius: 12px;
+    }
+
+    .cart-actions {
+      margin-top: 18px;
+      display:flex;
+      gap:10px;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      background: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    .btn-primary:hover { filter: brightness(0.95); }
+
+    /* Subtle scrollbar */
+    .cart-grid::-webkit-scrollbar { height: 8px; }
+    .cart-grid::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    .cart-grid::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+
+<body>
+
+<div class="cart-top">
+  <div>
+    <h1 style="margin:0;">Your Cart</h1>
+    <div class="cart-note">Tip: Drag tours between days to swap dates.</div>
+  </div>
+
+  <div class="cart-actions" style="margin-top:0;">
+    <button class="btn" onclick="window.location='/'">← Back to itinerary</button>
+    <button class="btn btn-primary" onclick="checkout()">Checkout</button>
+  </div>
+</div>
+
+<div class="cart-grid" id="cartGrid">
+  {# Demo: 7 day columns. Later you can drive this from itinerary length/dates. #}
+  {% set cart_items = cart["items"] if cart and cart.get("items") else [] %}
+
+  {% for d in range(0, 7) %}
+    <div class="day-col" data-day="{{ d }}">
+      <h3>Day {{ d + 1 }}</h3>
+
+      <div class="dropzone" data-day="{{ d }}">
+        {% set day_items = cart_items | selectattr("day_index", "equalto", d) | list %}
+
+        {% if day_items|length == 0 %}
+          <div class="empty-slot">Drop a tour here</div>
+        {% endif %}
+
+        {% for item in day_items %}
+          <div class="cart-card" draggable="true" data-product-id="{{ item.product_id }}">
+            {% if item.image_url %}
+              <img src="{{ item.image_url }}" alt="">
+            {% endif %}
+
+            <div class="cart-title">{{ item.title or ("Product " ~ item.product_id) }}</div>
+
+            {% if item.duration_hours %}
+              <div class="cart-meta">⏱ {{ item.duration_hours }} hours</div>
+            {% endif %}
+
+            {# Pricing rules:
+               - if child_price exists -> show Adult + Child
+               - else -> show adult_price as "Per person" (reef flights / per pax)
+            #}
+            {% if item.adult_price %}
+              <div class="cart-price">
+                {% if item.child_price %}
+                  <div class="price-row">
+                    <span class="price-label">Adult</span>
+                    <span class="price-value">{{ item.adult_price }}</span>
+                  </div>
+                  <div class="price-row">
+                    <span class="price-label">Child</span>
+                    <span class="price-value">{{ item.child_price }}</span>
+                  </div>
+                {% else %}
+                  <div class="price-row">
+                    <span class="price-label">Per person</span>
+                    <span class="price-value">{{ item.adult_price }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+  let dragged = null;
+
+  function bindDraggables() {
+    document.querySelectorAll(".cart-card").forEach(card => {
+      card.addEventListener("dragstart", (e) => {
+        dragged = card;
+        e.dataTransfer.effectAllowed = "move";
+      });
+    });
+  }
+
+  async function saveMoves() {
+    const moves = [];
+    document.querySelectorAll(".dropzone").forEach(z => {
+      const dayIndex = parseInt(z.dataset.day, 10);
+      z.querySelectorAll(".cart-card").forEach(c => {
+        moves.push({ product_id: c.dataset.productId, day_index: dayIndex });
+      });
+    });
+
+    await fetch("/cart/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ moves })
+    });
+  }
+
+  document.querySelectorAll(".dropzone").forEach(zone => {
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("drag-over");
+    });
+
+    zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+
+    zone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      if (!dragged) return;
+
+      // Remove "Drop a tour here" placeholder if exists
+      zone.querySelectorAll(".empty-slot").forEach(el => el.remove());
+
+      zone.appendChild(dragged);
+      await saveMoves();
+
+      dragged = null;
+    });
+  });
+
+  function checkout() {
+    alert("Checkout (demo) — next step: send cart to booking page.");
+  }
+
+  bindDraggables();
+</script>
+
+</body>
+</html>
