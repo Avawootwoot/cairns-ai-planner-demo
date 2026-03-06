@@ -34,7 +34,7 @@ CATEGORY_STRUCTURE = {
     "Nature & Wildlife": [
         "Rainforest Walk",
         "Waterfall Visit",
-        "Crocodile Experiencer",
+        "Crocodile Experience",
         "National Park Visit",
         "Aquarium",
         "Beach",
