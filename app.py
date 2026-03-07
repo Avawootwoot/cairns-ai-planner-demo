@@ -417,3 +417,36 @@ def cart_update(request: Request, payload: dict = Body(...)):
     cart["items"] = items
     save_cart(request, cart)
     return {"ok": True, "cart": cart}
+
+@app.get("/checkout", response_class=HTMLResponse)
+def checkout_page(request: Request):
+    cart = get_cart(request)
+    return templates.TemplateResponse(
+        "checkout.html",
+        {
+            "request": request,
+            "cart": cart,
+        },
+    )
+
+@app.post("/cart/remove")
+def cart_remove(
+    request: Request,
+    product_id: str = Form(...),
+):
+    cart = get_cart(request)
+    items = cart.get("items", [])
+
+    removed = False
+    new_items = []
+
+    for item in items:
+        if not removed and str(item.get("product_id")) == str(product_id):
+            removed = True
+            continue
+        new_items.append(item)
+
+    cart["items"] = new_items
+    save_cart(request, cart)
+
+    return RedirectResponse(url="/cart", status_code=303)

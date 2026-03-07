@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-
 <html>
 <head>
     <title>Cairns AI Trip Planner</title>
-    <link rel="stylesheet" href="/static/styles.css?v=2">
+    <link rel="stylesheet" href="/static/styles.css?v=3">
 </head>
 
 <body>
@@ -13,18 +12,24 @@
 <form method="post" action="/plan">
 
   <h3>Select Dates</h3>
-  Start: <input type="date" name="start_date" required>
-  End: <input type="date" name="end_date" required>
+  Start: <input type="date" name="start_date" value="{{ start_date or '' }}" required>
+  End: <input type="date" name="end_date" value="{{ end_date or '' }}" required>
 
   <h3>Travellers</h3>
-  Adults: <input type="number" name="adults" value="2">
-  Children: <input type="number" name="children" value="0">
-  Infants: <input type="number" name="infants" value="0">
-  Pensioners: <input type="number" name="pensioners" value="0">
+  Adults: <input type="number" name="adults" value="{{ adults or 2 }}" min="0">
+  Children: <input type="number" name="children" value="{{ children or 0 }}" min="0">
+  Infants: <input type="number" name="infants" value="{{ infants or 0 }}" min="0">
+  Pensioners: <input type="number" name="pensioners" value="{{ pensioners or 0 }}" min="0">
 
   <h3>Can Swim?</h3>
-  <label><input type="radio" name="can_swim" value="yes" checked> Yes</label>
-  <label><input type="radio" name="can_swim" value="no"> No</label>
+  <label>
+    <input type="radio" name="can_swim" value="yes" {% if can_swim != 'no' %}checked{% endif %}>
+    Yes
+  </label>
+  <label>
+    <input type="radio" name="can_swim" value="no" {% if can_swim == 'no' %}checked{% endif %}>
+    No
+  </label>
 
   <h3>Select Must-Do's</h3>
   {% for md in must_dos %}
@@ -49,151 +54,154 @@
 
   <br>
   <button type="submit" name="action" value="plan">Generate Itinerary</button>
-
-  {% if itinerary %}
-
-    <hr>
-    <h2>Your Itinerary</h2>
-
-    {% for day in itinerary %}
-    <div class="day-card">
-
-      <h3>{{ day.date }}</h3>
-
-      {% if day.anchor_group %}
-        <strong>{{ day.anchor_group.title }}</strong><br>
-
-        <h4>Available Options:</h4>
-
-        <div class="variants-wrapper">
-          <div class="variants-scroll">
-            {% for v in day.variants %}
-              <div class="variant-card">
-
-                {% if v.image_url %}
-                  <img src="{{ v.image_url }}" alt="{{ v.title }}" class="variant-image">
-                {% endif %}
-
-                <div class="variant-title">{{ v.title }}</div>
-                {% if v.duration_hours %}
-                  <div class="variant-duration">
-                    ⏱ {{ v.duration_hours }} hours
-                  </div>
-                {% endif %}
-
-                <!-- pricing block (treats NaN/blank child price as "per person") -->
-                {% if v.adult_price %}
-                  {% set cp = v.child_price %}
-                  {% if cp is not none %}
-                    {% set cp = cp|string %}
-                  {% endif %}
-
-                  <div class="price-box">
-
-                    {% if cp and cp|lower != 'nan' %}
-                      <div class="price-row">
-                        <span class="price-label">Adult</span>
-                        <span class="price-value">{{ v.adult_price }}</span>
-                      </div>
-
-                      <div class="price-row">
-                        <span class="price-label">Child</span>
-                        <span class="price-value">{{ v.child_price }}</span>
-                      </div>
-                    {% else %}
-                      <div class="price-from">FROM</div>
-                      <div class="price-main">{{ v.adult_price }}</div>
-                      <div class="price-sub">per person</div>
-                    {% endif %}
-
-                  </div>
-                {% endif %}
-
-                <div class="variant-actions">
-
-                  <details class="variant-details">
-                    <summary class="btn-secondary" role="button" aria-label="More details">
-                      More details
-                    </summary>
-
-                    <div class="variant-details-body">
-                      <div><strong>Product ID:</strong> {{ v.product_id }}</div>
-                      <div><strong>Hot score:</strong> {{ v.hot_seller_score }}</div>
-
-                      {% if v.adult_price %}
-                        <div><strong>Adult price:</strong> {{ v.adult_price }}</div>
-                      {% endif %}
-
-                      {# ✅ UPDATED: only show child price if it's not NaN #}
-                      {% set cp2 = v.child_price %}
-                      {% if cp2 is not none %}
-                        {% set cp2 = cp2|string %}
-                      {% endif %}
-                      {% if cp2 and cp2|lower != 'nan' %}
-                        <div><strong>Child price:</strong> {{ v.child_price }}</div>
-                      {% endif %}
-                    </div>
-                  </details>
-
-                  <div class="add-cart-wrap">
-                    <button type="submit"
-                            name="add_to_cart"
-                            value="{{ v.product_id }}"
-                            class="btn-primary variant-add">
-                      🛒 Add to cart
-                    </button>
-
-                    <span class="tooltip" aria-label="Info">
-                      ⓘ
-                      <span class="tooltip-text">
-                        You can change the date at the final booking page.
-                      </span>
-                    </span>
-                  </div>
-
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        </div>
-
-        <!-- Free-time attractions accordion (collapsed by default) -->
-        <details class="accordion">
-          <summary class="accordion-header">
-            Explore these spots at your leisure!
-            <span class="accordion-count">{{ day.fillers|length }}</span>
-          </summary>
-
-          <div class="accordion-body">
-            {% if day.fillers %}
-              <ul class="free-list">
-                {% for f in day.fillers %}
-                  <li>{{ f.title }}</li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="free-empty">No free-time attractions suggested for this day.</p>
-            {% endif %}
-          </div>
-        </details>
-
-        {% if day.filler_note %}
-          <p><em>{{ day.filler_note }}</em></p>
-        {% endif %}
-
-      {% else %}
-        <p>No activity assigned.</p>
-      {% endif %}
-
-    </div>
-    {% endfor %}
-
-  {% endif %}
-
 </form>
 
 {% if itinerary %}
-  <!-- Floating Chat Widget -->
+
+  <hr>
+  <h2>Your Itinerary</h2>
+
+  {% for day in itinerary %}
+  {% set day_index = loop.index0 %}
+  <div class="day-card">
+
+    <h3>{{ day.date }}</h3>
+
+    {% if day.anchor_group %}
+      <strong>{{ day.anchor_group.title }}</strong><br>
+
+      <h4>Available Options:</h4>
+
+      <div class="variants-wrapper">
+        <div class="variants-scroll">
+          {% for v in day.variants %}
+            <div class="variant-card">
+
+              {% if v.image_url %}
+                <img src="{{ v.image_url }}" alt="{{ v.title }}" class="variant-image">
+              {% endif %}
+
+              <div class="variant-title">{{ v.title }}</div>
+
+              {% if v.duration_hours %}
+                <div class="variant-duration">
+                  ⏱ {{ v.duration_hours }} hours
+                </div>
+              {% endif %}
+
+              {% if v.adult_price %}
+                {% set cp = v.child_price %}
+                {% if cp is not none %}
+                  {% set cp = cp|string %}
+                {% endif %}
+
+                <div class="price-box">
+                  {% if cp and cp|lower != 'nan' %}
+                    <div class="price-row">
+                      <span class="price-label">Adult</span>
+                      <span class="price-value">{{ v.adult_price }}</span>
+                    </div>
+
+                    <div class="price-row">
+                      <span class="price-label">Child</span>
+                      <span class="price-value">{{ v.child_price }}</span>
+                    </div>
+                  {% else %}
+                    <div class="price-from">FROM</div>
+                    <div class="price-main">{{ v.adult_price }}</div>
+                    <div class="price-sub">per person</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <div class="variant-actions">
+
+                <details class="variant-details">
+                  <summary class="btn-secondary" role="button" aria-label="More details">
+                    More details
+                  </summary>
+
+                  <div class="variant-details-body">
+                    <div><strong>Product ID:</strong> {{ v.product_id }}</div>
+                    <div><strong>Hot score:</strong> {{ v.hot_seller_score }}</div>
+
+                    {% if v.adult_price %}
+                      <div><strong>Adult price:</strong> {{ v.adult_price }}</div>
+                    {% endif %}
+
+                    {% set cp2 = v.child_price %}
+                    {% if cp2 is not none %}
+                      {% set cp2 = cp2|string %}
+                    {% endif %}
+                    {% if cp2 and cp2|lower != 'nan' %}
+                      <div><strong>Child price:</strong> {{ v.child_price }}</div>
+                    {% endif %}
+                  </div>
+                </details>
+
+                <form method="post" action="/cart/add" class="add-cart-wrap">
+                  <input type="hidden" name="product_id" value="{{ v.product_id }}">
+                  <input type="hidden" name="day_index" value="{{ day_index }}">
+
+                  <button type="submit" class="btn-primary variant-add">
+                    🛒 Add to cart
+                  </button>
+
+                  <span class="tooltip" aria-label="Info">
+                    ⓘ
+                    <span class="tooltip-text">
+                      You can change the date at the final booking page.
+                    </span>
+                  </span>
+                </form>
+
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <details class="accordion">
+        <summary class="accordion-header">
+          Explore these spots at your leisure!
+          <span class="accordion-count">{{ day.fillers|length }}</span>
+        </summary>
+
+        <div class="accordion-body">
+          {% if day.fillers %}
+            <ul class="free-list">
+              {% for f in day.fillers %}
+                <li>{{ f.title }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="free-empty">No free-time attractions suggested for this day.</p>
+          {% endif %}
+        </div>
+      </details>
+
+      {% if day.filler_note %}
+        <p><em>{{ day.filler_note }}</em></p>
+      {% endif %}
+
+    {% else %}
+      <p>No activity assigned.</p>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+  <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
+    <button type="button"
+            class="btn-primary"
+            onclick="window.location='/cart'">
+      Review and Book
+    </button>
+  </div>
+
+{% endif %}
+
+{% if itinerary %}
   <div class="chat-fab" id="chatFab" aria-label="Open chat" title="Edit trip with chat">🗪</div>
 
   <div class="chat-panel" id="chatPanel" aria-hidden="true">
@@ -226,7 +234,6 @@
     <form class="chat-input" id="chatForm">
       <input type="hidden" name="itinerary_json" id="itineraryJson" value='{{ itinerary_json | safe }}'>
 
-      <!-- Round-trip inputs so backend can preserve state if needed -->
       <input type="hidden" name="start_date" value="{{ start_date }}">
       <input type="hidden" name="end_date" value="{{ end_date }}">
       <input type="hidden" name="adults" value="{{ adults }}">
@@ -333,13 +340,9 @@
           removeTyping();
           addMessage("bot", data.reply || "Done.");
 
-          // Update itinerary JSON for next edit
           if (data.itinerary_json) {
             document.getElementById("itineraryJson").value = data.itinerary_json;
           }
-
-          // If you want the main itinerary UI to update immediately, uncomment:
-          // window.location.reload();
 
         } catch (err) {
           removeTyping();
