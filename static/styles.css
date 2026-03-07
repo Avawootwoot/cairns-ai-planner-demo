@@ -89,7 +89,7 @@ body {
 }
 
 /* ============================= */
-/* ✅ NEW: Price box styling     */
+/* Price box styling             */
 /* ============================= */
 
 .price-box {
@@ -138,7 +138,6 @@ body {
 
 .variant-actions {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 10px;
     margin-top: 10px;
@@ -184,11 +183,11 @@ body {
     color: #111;
 }
 
-/* ✅ Fix: Add to cart button text should be white */
+/* Primary button */
 .btn-primary {
     background: #1f6feb;
     border: 1px solid #1f6feb;
-    color: #090909;
+    color: #fff;
     font-weight: 400;
 }
 
@@ -210,6 +209,7 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
+    margin-left: auto;
 }
 
 .tooltip {

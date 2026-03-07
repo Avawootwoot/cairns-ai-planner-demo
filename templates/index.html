@@ -3,9 +3,153 @@
 <head>
     <title>Cairns AI Trip Planner</title>
     <link rel="stylesheet" href="/static/styles.css?v=3">
+
+    <style>
+      .floating-cart-cta {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        z-index: 1000;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border: 1px solid #dbe3ef;
+        border-radius: 999px;
+        background: #ffffff;
+        color: #1f2937;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .floating-cart-cta:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.16);
+      }
+
+      .floating-cart-icon-wrap {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+      }
+
+      .floating-cart-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        background: #2563eb;
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+      }
+
+      .floating-cart-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 20px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      }
+
+      .floating-cart-copy {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+      }
+
+      .floating-cart-copy small {
+        font-size: 11px;
+        font-weight: 600;
+        color: #16a34a;
+        margin-bottom: 2px;
+      }
+
+      .floating-cart-copy span {
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .page-with-floating-cta {
+        padding-top: 72px;
+      }
+
+      .add-to-cart-success {
+        animation: pulseAdded 0.45s ease;
+      }
+
+      .add-cart-feedback {
+        font-size: 12px;
+        font-weight: 600;
+        color: #16a34a;
+        margin-left: 8px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .add-cart-feedback.show {
+        opacity: 1;
+      }
+
+      .variant-add[disabled] {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
+      @keyframes pulseAdded {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+      }
+
+      @media (max-width: 900px) {
+        .floating-cart-cta {
+          top: 14px;
+          right: 14px;
+          padding: 10px 12px;
+        }
+
+        .floating-cart-copy span {
+          font-size: 13px;
+        }
+
+        .page-with-floating-cta {
+          padding-top: 82px;
+        }
+      }
+    </style>
 </head>
 
-<body>
+<body class="{% if itinerary %}page-with-floating-cta{% endif %}">
+
+{% if itinerary %}
+  {% set cart_count = cart["items"]|length if cart and cart.get("items") else 0 %}
+  <a href="/cart" class="floating-cart-cta" aria-label="Review your trip" id="floatingCartCta">
+    <span class="floating-cart-icon-wrap">
+      <span class="floating-cart-icon">🛒</span>
+      <span class="floating-cart-badge" id="floatingCartBadge">{{ cart_count }}</span>
+    </span>
+    <span class="floating-cart-copy">
+      <small id="floatingCartStatus">Added to cart</small>
+      <span>Review your trip</span>
+    </span>
+  </a>
+{% endif %}
 
 <h1>Cairns AI Trip Planner</h1>
 
@@ -139,13 +283,15 @@
                   </div>
                 </details>
 
-                <form method="post" action="/cart/add" class="add-cart-wrap">
+                <form method="post" action="/cart/add" class="add-cart-wrap js-add-to-cart-form">
                   <input type="hidden" name="product_id" value="{{ v.product_id }}">
                   <input type="hidden" name="day_index" value="{{ day_index }}">
 
                   <button type="submit" class="btn-primary variant-add">
                     🛒 Add to cart
                   </button>
+
+                  <span class="add-cart-feedback">Added</span>
 
                   <span class="tooltip" aria-label="Info">
                     ⓘ
@@ -190,14 +336,6 @@
 
   </div>
   {% endfor %}
-
-  <div style="margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap;">
-    <button type="button"
-            class="btn-primary"
-            onclick="window.location='/cart'">
-      Review and Book
-    </button>
-  </div>
 
 {% endif %}
 
@@ -350,6 +488,81 @@
         } finally {
           sendBtn.disabled = false;
         }
+      });
+
+      const cartBadge = document.getElementById("floatingCartBadge");
+      const cartStatus = document.getElementById("floatingCartStatus");
+      const cartCta = document.getElementById("floatingCartCta");
+
+      function incrementCartBadge() {
+        if (!cartBadge) return;
+        const current = parseInt(cartBadge.textContent || "0", 10);
+        cartBadge.textContent = current + 1;
+      }
+
+      function showAddedState(button, feedbackEl) {
+        if (feedbackEl) {
+          feedbackEl.classList.add("show");
+          setTimeout(() => feedbackEl.classList.remove("show"), 1200);
+        }
+
+        if (cartCta) {
+          cartCta.classList.remove("add-to-cart-success");
+          void cartCta.offsetWidth;
+          cartCta.classList.add("add-to-cart-success");
+        }
+
+        if (cartStatus) {
+          cartStatus.textContent = "Added to cart";
+        }
+
+        if (button) {
+          const original = button.dataset.originalText || button.innerHTML;
+          button.dataset.originalText = original;
+          button.innerHTML = "✓ Added";
+          setTimeout(() => {
+            button.innerHTML = original;
+            button.disabled = false;
+          }, 900);
+        }
+      }
+
+      document.querySelectorAll(".js-add-to-cart-form").forEach((cartForm) => {
+        cartForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const button = cartForm.querySelector(".variant-add");
+          const feedbackEl = cartForm.querySelector(".add-cart-feedback");
+          const formData = new FormData(cartForm);
+
+          if (button) {
+            button.disabled = true;
+          }
+
+          try {
+            const res = await fetch("/cart/add", {
+              method: "POST",
+              body: formData,
+              credentials: "same-origin",
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "application/json"
+              }
+            });
+
+            if (!res.ok) {
+              throw new Error("Add to cart failed");
+            }
+
+            incrementCartBadge();
+            showAddedState(button, feedbackEl);
+          } catch (err) {
+            if (button) {
+              button.disabled = false;
+            }
+            alert("Could not add this tour to the cart.");
+          }
+        });
       });
     })();
   </script>
